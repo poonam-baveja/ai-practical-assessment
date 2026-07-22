@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Status {
+  OPEN         // Newly created ticket, awaiting action
+  IN_PROGRESS  // Actively being worked on
+  RESOLVED     // Fix/answer provided, pending confirmation
+  CLOSED       // Terminal state — no further changes allowed
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model Ticket {
+  id          Int       @id @default(autoincrement())  // Auto-incrementing integer primary key
+  title       String                            // Short summary of the issue (max 200 chars, enforced at app layer)
+  description String                            // Detailed explanation (max 2000 chars, enforced at app layer)
+  status      Status    @default(OPEN)          // Current lifecycle state (see state machine in design docs)
+  createdAt   DateTime  @default(now())         // When the ticket was created
+  updatedAt   DateTime  @updatedAt              // Auto-updated on any modification
+
+  comments    Comment[]                         // One-to-many relationship with Comment
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())  // Auto-incrementing integer primary key
+  message   String                              // Comment text content
+  createdAt DateTime @default(now())            // When the comment was posted
+
+  ticketId  Int                                 // Foreign key → Ticket
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}

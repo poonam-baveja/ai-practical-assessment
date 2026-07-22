@@ -1,0 +1,22 @@
+{
+  "name": "support-ticket-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Support Ticket Management System — AI Practical Assessment",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "build": "npm run build --workspace=frontend",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "workspaces": [
+    "frontend",
+    "backend",
+    "database"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.4"
+  }
+}
