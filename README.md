@@ -115,16 +115,16 @@ git clone <repository-url>
 cd ai-practical-assessment
 npm install
 ```
+> **Note:** `npm install` automatically generates the Prisma Client via the `postinstall` script.
 
 ### Database Setup
 
 ```bash
 cd database
-npx prisma generate
-npx prisma migrate dev --name init
-npx prisma db seed
+npm run migrate
+npm run seed
 ```
-
+> **Note:** The project includes `database/.env` with the SQLite connection (`DATABASE_URL="file:./dev.db"`), so no additional environment configuration is required.
 ---
 
 ## Running the Application
