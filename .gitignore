@@ -41,6 +41,9 @@ __pycache__/
 .venv/
 venv/
 
+# database
+database/dev.db
+
 # Package manager lock files (uncomment if needed)
 # package-lock.json
 # yarn.lock
