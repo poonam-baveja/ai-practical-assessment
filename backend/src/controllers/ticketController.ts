@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { getAllTickets, createTicket, getTicketById, updateTicketStatus } from '../services/ticketService';
-import { createTicketSchema, updateStatusSchema, ticketQuerySchema } from '../validators/ticketValidator';
+import { getAllTickets, createTicket, getTicketById, updateTicketStatus, updateTicket } from '../services/ticketService';
+import { createTicketSchema, updateStatusSchema, ticketQuerySchema, updateTicketSchema } from '../validators/ticketValidator';
 import { isValidTransition } from '../utils/statusMachine';
 
 /**
@@ -178,6 +178,67 @@ export const patchTicketStatus = async (req: Request, res: Response) => {
       status: 500,
       error: 'Internal Server Error',
       message: 'Failed to update ticket status',
+    });
+  }
+};
+
+/**
+ * Handles PUT /api/tickets/:id
+ * Updates editable fields: title, description, priority, assignedToId.
+ * Does NOT allow updating status or createdBy.
+ * Returns the updated ticket.
+ */
+export const putTicket = async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+
+  if (isNaN(id)) {
+    res.status(400).json({
+      status: 400,
+      error: 'Bad Request',
+      message: 'Ticket ID must be a number',
+    });
+    return;
+  }
+
+  // Validate request body
+  const result = updateTicketSchema.safeParse(req.body);
+
+  if (!result.success) {
+    const errors = result.error.issues.map((issue) => ({
+      field: issue.path.join('.'),
+      message: issue.message,
+    }));
+
+    res.status(400).json({
+      status: 400,
+      error: 'Validation Error',
+      message: 'Invalid request body',
+      details: errors,
+    });
+    return;
+  }
+
+  try {
+    // Check ticket exists
+    const ticket = await getTicketById(id);
+
+    if (!ticket) {
+      res.status(404).json({
+        status: 404,
+        error: 'Not Found',
+        message: `Ticket with ID ${id} not found`,
+      });
+      return;
+    }
+
+    // Apply update
+    const updatedTicket = await updateTicket(id, result.data);
+    res.json(updatedTicket);
+  } catch (error) {
+    res.status(500).json({
+      status: 500,
+      error: 'Internal Server Error',
+      message: 'Failed to update ticket',
     });
   }
 };

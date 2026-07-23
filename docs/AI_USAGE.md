@@ -42,17 +42,16 @@ Kiro was used to create the initial project requirements document based on the a
 The generated requirements were manually refined to:
 
 - Keep the project frontend-focused.
-- Remove unnecessary enterprise features.
 - Limit the scope to assignment requirements.
 - Keep the application simple and maintainable.
+- Start with core features, then incrementally add extras (comments, dashboard).
 
 Examples of manual refinements:
 
 - Removed Activity Log.
-- Removed Dashboard.
-- Removed Comments.
-- Removed Sorting.
-- Focused only on core ticket management features.
+- Removed Advanced Sorting.
+- Simplified the initial scope to core ticket CRUD + status workflow.
+- Added Comments and Dashboard as the project progressed.
 
 ---
 
@@ -64,7 +63,7 @@ Kiro assisted in generating the technical design including:
 - Express layered architecture
 - API structure
 - Folder organization
-- Data model
+- Data model (User, Ticket, Comment)
 - UI flow
 
 The design was reviewed manually before implementation.
@@ -81,8 +80,10 @@ AI was used to generate boilerplate code for:
 - Route structure
 - Controllers
 - Services
-- Prisma integration
+- Prisma integration (User, Ticket, Comment models)
 - Zod validation
+- Status state machine
+- Integration tests (Supertest)
 
 ### Frontend
 
@@ -90,9 +91,11 @@ AI was used to generate boilerplate code for:
 - React Query hooks
 - API service layer
 - Chakra UI forms
-- Ticket pages
+- Ticket pages (Dashboard, List, Create, Detail, Edit)
 - Status update flow
 - Search and filter implementation
+- Comment section
+- Frontend unit tests
 
 Each generated implementation was reviewed and tested before being accepted.
 
@@ -110,17 +113,6 @@ AI initially suggested Tailwind CSS.
 
 The project was changed to **Chakra UI** to match my frontend expertise and maintain consistency.
 
-### Project Scope
-
-The initial design included:
-
-- Dashboard
-- Activity Log
-- Comments
-- Advanced Sorting
-
-These features were removed to keep the project focused on the assessment objectives.
-
 ### Architecture
 
 The generated architecture was simplified by:
@@ -128,6 +120,15 @@ The generated architecture was simplified by:
 - Avoiding unnecessary abstraction layers
 - Keeping controllers and services lightweight
 - Avoiding over-engineering
+- Using native `<select>` elements instead of Chakra compound components (due to runtime bugs)
+
+### Chakra UI v3 Issues
+
+Multiple Chakra v3 compound components crashed at runtime. These were manually replaced with simpler alternatives:
+
+- `Field.Root` / `Field.Label` → plain `Box` + `Text`
+- `NativeSelect` → native `<select>` elements
+- `Toaster` → custom component with explicit render function
 
 ---
 
@@ -137,30 +138,25 @@ AI assisted in troubleshooting several implementation issues.
 
 Examples include:
 
-- Prisma configuration issues
-- Prisma migration setup
-- Workspace configuration
-- Chakra UI version compatibility
-- React runtime errors
-- API integration
+- Prisma configuration in monorepo
+- Zod v4 API changes (removed `required_error`)
+- Chakra UI v3 "children is not a function" errors
+- Toast notification rendering
 - React Query cache invalidation
+- Test parallelism race conditions
 
 All fixes were manually validated before being committed.
 
 ---
 
-## 6. Validation
+## 6. Testing
 
-Generated code was verified by:
+AI generated the test suite:
 
-- Running the application locally
-- Testing backend endpoints
-- Verifying database operations
-- Reviewing generated code
-- Removing unnecessary complexity
-- Ensuring feature completeness
+- **Backend:** 75 integration tests using Vitest + Supertest
+- **Frontend:** 15 unit/component tests using Vitest + React Testing Library
 
-AI-generated code was never accepted without review.
+Tests were reviewed, run, and debugged iteratively (e.g., fixing hardcoded user IDs, adding sequential file execution).
 
 ---
 
@@ -170,27 +166,12 @@ Although AI accelerated development, the following responsibilities remained man
 
 - Requirement refinement
 - Architecture decisions
-- Technology selection
+- Technology selection (Chakra UI over Tailwind)
 - Code review
-- Debugging
+- Debugging Chakra v3 runtime issues
 - Testing
 - Final implementation decisions
 - UI/UX improvements
-
----
-
-# Benefits of AI-Assisted Development
-
-Using Kiro significantly improved development productivity by:
-
-- Reducing boilerplate code
-- Accelerating API development
-- Generating initial project structure
-- Assisting with documentation
-- Providing implementation guidance
-- Helping identify configuration issues
-
-This allowed more time to focus on architecture, frontend implementation, and overall user experience.
 
 ---
 

@@ -14,17 +14,41 @@ enum Status {
   IN_PROGRESS  // Actively being worked on
   RESOLVED     // Fix/answer provided, pending confirmation
   CLOSED       // Terminal state — no further changes allowed
+  CANCELLED    // Terminal state — ticket was cancelled before resolution
+}
+
+enum Priority {
+  LOW          // Non-urgent, can be addressed when convenient
+  MEDIUM       // Standard priority, default for new tickets
+  HIGH         // Urgent, should be addressed soon
 }
 
 // ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id    Int    @id @default(autoincrement())   // Auto-incrementing integer primary key
+  name  String                                  // Display name of the user
+  email String @unique                          // Email address, must be unique
+
+  createdTickets  Ticket[]  @relation("CreatedBy")       // Tickets this user created
+  assignedTickets Ticket[]  @relation("AssignedTo")      // Tickets assigned to this user
+  comments        Comment[] @relation("CommentAuthor")   // Comments this user wrote
+}
 
 model Ticket {
   id          Int       @id @default(autoincrement())  // Auto-incrementing integer primary key
   title       String                            // Short summary of the issue (max 200 chars, enforced at app layer)
   description String                            // Detailed explanation (max 2000 chars, enforced at app layer)
   status      Status    @default(OPEN)          // Current lifecycle state (see state machine in design docs)
+  priority    Priority  @default(MEDIUM)        // Urgency level, defaults to MEDIUM
   createdAt   DateTime  @default(now())         // When the ticket was created
   updatedAt   DateTime  @updatedAt              // Auto-updated on any modification
+
+  createdById  Int?                             // Foreign key → User who created the ticket (nullable for backward compat)
+  createdBy    User?    @relation("CreatedBy", fields: [createdById], references: [id])
+
+  assignedToId Int?                             // Foreign key → User assigned to the ticket (nullable — unassigned tickets)
+  assignedTo   User?    @relation("AssignedTo", fields: [assignedToId], references: [id])
 
   comments    Comment[]                         // One-to-many relationship with Comment
 }
@@ -36,4 +60,7 @@ model Comment {
 
   ticketId  Int                                 // Foreign key → Ticket
   ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  createdById Int?                              // Foreign key → User who wrote the comment
+  createdBy   User?  @relation("CommentAuthor", fields: [createdById], references: [id])
 }

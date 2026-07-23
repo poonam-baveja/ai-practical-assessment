@@ -6,22 +6,29 @@ A full-stack support ticket management system built as part of an AI Practical A
 
 ## Project Overview
 
-This application allows users to create, view, search, filter, and manage support tickets through a defined status workflow. It consists of a React frontend consuming a REST API backed by SQLite.
+This application allows users to create, view, search, filter, edit, and manage support tickets through a defined status workflow. It consists of a React frontend consuming a REST API backed by SQLite.
 
-**3 Screens:**
-- **Ticket List** — Searchable, filterable table with status badges
-- **Create Ticket** — Validated form with real-time feedback
-- **Ticket Detail** — View details and update ticket status
+**5 Screens:**
+- **Dashboard** — Overview with ticket counts by status
+- **Ticket List** — Searchable, filterable table with status and priority badges
+- **Create Ticket** — Validated form with priority and assignee selection
+- **Ticket Detail** — Full details, status update, and comments
+- **Edit Ticket** — Update title, description, priority, and assignee
 
 ---
 
 ## Features
 
-- Create support tickets with title and description
-- View all tickets in a responsive table
+- Create support tickets with title, description, priority, and assignee
+- View all tickets in a responsive table with status and priority badges
 - Search tickets by title or description (case-insensitive, server-side)
 - Filter tickets by status
-- Update ticket status through an enforced workflow (OPEN → IN_PROGRESS → RESOLVED → CLOSED)
+- Update ticket status through an enforced workflow (OPEN → IN_PROGRESS → RESOLVED → CLOSED, with CANCELLED available from OPEN and IN_PROGRESS)
+- Edit ticket details (title, description, priority, assignee)
+- Add comments to tickets with author attribution
+- Dashboard with ticket counts grouped by status
+- User assignment (created by, assigned to)
+- Priority levels (LOW, MEDIUM, HIGH)
 - Client-side and server-side validation using Zod
 - Toast notifications for success and error states
 - Loading, empty, and error states on every view
@@ -38,7 +45,7 @@ This application allows users to create, view, search, filter, and manage suppor
 | HTTP | Axios |
 | Backend | Express 5, TypeScript, Zod |
 | Database | SQLite via Prisma ORM |
-| Testing | Vitest, React Testing Library |
+| Testing | Vitest, React Testing Library, Supertest |
 
 ---
 
@@ -74,29 +81,32 @@ This application allows users to create, view, search, filter, and manage suppor
 │   ├── app/                        # Providers, routes
 │   ├── components/layout/          # Header, PageContainer, AppLayout
 │   ├── features/tickets/
-│   │   ├── api/                    # Axios API functions
-│   │   ├── components/             # TicketFilters
-│   │   ├── hooks/                  # useTickets, useTicket, useCreateTicket, useUpdateTicketStatus
-│   │   ├── pages/                  # TicketListPage, CreateTicketPage, TicketDetailPage
+│   │   ├── api/                    # ticketApi, commentApi, userApi
+│   │   ├── components/             # TicketFilters, AddCommentForm, CommentList
+│   │   ├── hooks/                  # useTickets, useTicket, useCreateTicket, useUpdateTicket,
+│   │   │                           # useUpdateTicketStatus, useComments, useCreateComment, useUsers
+│   │   ├── pages/                  # DashboardPage, TicketListPage, CreateTicketPage,
+│   │   │                           # TicketDetailPage, EditTicketPage
 │   │   ├── utils/                  # Status machine (frontend)
-│   │   └── types.ts               # Ticket, Comment, Status types
+│   │   └── types.ts               # Ticket, Comment, User, Status, Priority
 │   ├── services/                   # Shared Axios instance
-│   ├── shared/                     # Utilities, hooks, toaster
+│   ├── shared/                     # Utilities, hooks, toaster component
 │   └── theme/                      # Chakra UI custom theme
 │
 ├── backend/src/
-│   ├── controllers/                # Request handlers
-│   ├── routes/                     # Express route definitions
-│   ├── services/                   # Business logic + Prisma queries
+│   ├── controllers/                # ticketController, commentController, userController
+│   ├── routes/                     # tickets, comments, users
+│   ├── services/                   # ticketService, commentService, userService
+│   ├── tests/                      # Integration tests (Supertest)
 │   ├── utils/                      # Status machine (backend)
-│   └── validators/                 # Zod schemas
+│   └── validators/                 # ticketValidator, commentValidator
 │
 ├── database/prisma/
-│   ├── schema.prisma               # Ticket + Comment models
-│   └── seed.ts                     # Sample data
+│   ├── schema.prisma               # User + Ticket + Comment models
+│   ├── migrations/                 # Database migration history
+│   └── seed.ts                     # Sample data (3 users, 5 tickets, 5 comments)
 │
-├── docs/                           # Requirements, design, acceptance criteria
-└── tool-specific/kiro-specs/       # Spec-driven development artifacts
+└── docs/                           # Architecture, AI usage, development process, reflection
 ```
 
 ---
@@ -115,16 +125,19 @@ git clone <repository-url>
 cd ai-practical-assessment
 npm install
 ```
-> **Note:** `npm install` automatically generates the Prisma Client via the `postinstall` script.
+
+> `npm install` automatically generates the Prisma Client via the `postinstall` script.
 
 ### Database Setup
 
 ```bash
 cd database
-npm run migrate
-npm run seed
+npx prisma migrate dev
+npx prisma db seed
 ```
-> **Note:** The project includes `database/.env` with the SQLite connection (`DATABASE_URL="file:./dev.db"`), so no additional environment configuration is required.
+
+> The project includes `database/.env` with the SQLite connection (`DATABASE_URL="file:./dev.db"`), so no additional environment configuration is required.
+
 ---
 
 ## Running the Application
@@ -152,8 +165,8 @@ cd frontend && npm run dev
 npm test
 
 # Individual
-cd backend && npm test
-cd frontend && npm test
+cd backend && npm test    # 75 tests
+cd frontend && npm test   # 15 tests
 ```
 
 ---
@@ -163,16 +176,27 @@ cd frontend && npm test
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/tickets` | List tickets (supports `?search=` and `?status=`) |
-| `GET` | `/api/tickets/:id` | Get a single ticket by ID |
+| `GET` | `/api/tickets/:id` | Get ticket by ID (includes comments) |
 | `POST` | `/api/tickets` | Create a new ticket |
+| `PUT` | `/api/tickets/:id` | Update ticket fields (title, description, priority, assignee) |
 | `PATCH` | `/api/tickets/:id/status` | Update ticket status |
+| `GET` | `/api/tickets/:id/comments` | List comments for a ticket |
+| `POST` | `/api/tickets/:id/comments` | Add a comment to a ticket |
+| `GET` | `/api/users` | List all users |
 | `GET` | `/health` | Health check |
 
 ### Status Workflow (Enforced)
 
 ```
 OPEN → IN_PROGRESS → RESOLVED → CLOSED
+  ↓         ↓
+CANCELLED  CANCELLED
 ```
+
+- OPEN can move to IN_PROGRESS or CANCELLED
+- IN_PROGRESS can move to RESOLVED or CANCELLED
+- RESOLVED can move to CLOSED
+- CLOSED and CANCELLED are terminal states (no further transitions)
 
 Invalid transitions return `400` with a descriptive error message.
 
@@ -190,15 +214,15 @@ This project was developed using **Kiro** with a **Spec-Driven Development** wor
 4. **Task Breakdown** — Organized into checkpoints with verifiable deliverables
 5. **Incremental Implementation** — One layer at a time, verified at each step
 
-### Artifacts
+### Documentation
 
 | Document | Location |
 |----------|----------|
-| Requirements | `docs/requirements.md` |
-| Acceptance Criteria | `docs/acceptance-criteria.md` |
-| Design Document | `docs/design.md` |
-| Folder Structure | `docs/folder-structure.md` |
-| Kiro Specs | `tool-specific/kiro-specs/` |
+| Architecture & Design | `docs/ARCHITECTURE.md` |
+| AI Usage & Methodology | `docs/AI_USAGE.md` |
+| Development Process | `docs/DEVELOPMENT_PROCESS.md` |
+| Prompt History | `PROMPT_HISTORY.md` |
+| Reflection | `docs/REFLECTION.md` |
 
 ### Development Protocol
 
@@ -227,14 +251,13 @@ This project was developed using **Kiro** with a **Spec-Driven Development** wor
 
 ## Future Improvements
 
-- Comments on tickets
 - Pagination for large datasets
-- Sorting (by date, status, title)
-- Dashboard with ticket statistics
+- Sorting (by date, status, priority)
 - User authentication and role-based access
 - Dark mode support
 - Activity log / audit trail
 - File attachments
+- Real-time updates (WebSocket)
 
 ---
 
@@ -244,9 +267,11 @@ This project was developed using **Kiro** with a **Spec-Driven Development** wor
 
 | Screen | Description |
 |--------|-------------|
-| Ticket List | Searchable table with status filter and create button |
-| Create Ticket | Validated form with loading state and toast feedback |
-| Ticket Detail | Full details with status transition workflow |
+| Dashboard | Status counts (Total, Open, In Progress, Resolved, Closed, Cancelled) |
+| Ticket List | Searchable table with status filter, priority badges, and create button |
+| Create Ticket | Validated form with priority, assignee, and toast feedback |
+| Ticket Detail | Full details with status transitions and comment thread |
+| Edit Ticket | Pre-filled form for updating ticket fields |
 
 ---
 

@@ -2,20 +2,23 @@
  * Defines the valid status transitions for tickets.
  *
  * Allowed transitions:
- *   OPEN → IN_PROGRESS
- *   IN_PROGRESS → RESOLVED
+ *   OPEN → IN_PROGRESS, CANCELLED
+ *   IN_PROGRESS → RESOLVED, CANCELLED
  *   RESOLVED → CLOSED
  *
- * CLOSED is a terminal state — no transitions allowed.
+ * Terminal states (no outgoing transitions):
+ *   CLOSED
+ *   CANCELLED
  */
 
-type Status = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+type Status = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
 
 const VALID_TRANSITIONS: Record<Status, Status[]> = {
-  OPEN: ['IN_PROGRESS'],
-  IN_PROGRESS: ['RESOLVED'],
+  OPEN: ['IN_PROGRESS', 'CANCELLED'],
+  IN_PROGRESS: ['RESOLVED', 'CANCELLED'],
   RESOLVED: ['CLOSED'],
   CLOSED: [],
+  CANCELLED: [],
 };
 
 /**

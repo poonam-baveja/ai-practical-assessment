@@ -4,172 +4,116 @@
 
 This project was my first end-to-end application developed using a structured AI-assisted workflow with **Kiro** and Spec-Driven Development (SDD). Rather than using AI to generate the entire application in a single step, I used it as a development assistant throughout the project lifecycle while retaining ownership of the architecture, implementation decisions, debugging, and validation.
 
-The project demonstrates how AI can improve developer productivity while still requiring engineering judgement to produce a maintainable solution.
-
 ---
 
 # What Went Well
 
 ## 1. Spec-Driven Development
 
-One of the biggest successes of this project was following a Spec-Driven Development approach.
-
-Instead of immediately writing code, I first created:
-
-- Requirements
-- Acceptance Criteria
-- Design Document
-- Folder Structure
-- Implementation Tasks
-
-Having these documents available before implementation made development much more organized and reduced unnecessary rework.
-
----
+Following a spec-first approach kept development organized. Having requirements, acceptance criteria, and a design document before writing code reduced rework and kept the scope controlled.
 
 ## 2. Incremental Development
 
-Rather than generating large portions of the application, I implemented one feature at a time.
-
-The development order was:
+Building one feature at a time and validating before moving on kept the project stable:
 
 1. Project Setup
-2. Ticket List
-3. Create Ticket
-4. Ticket Details
-5. Update Ticket Status
+2. Ticket List (GET)
+3. Create Ticket (POST)
+4. Ticket Detail (GET by ID)
+5. Status Updates (PATCH + state machine)
 6. Search & Filter
-
-Completing and validating each feature before moving to the next helped keep the project stable throughout development.
-
----
+7. Priority & User Assignment
+8. Comments
+9. Edit Ticket (PUT)
+10. Dashboard
+11. Integration Tests
+12. Documentation
 
 ## 3. Frontend-Focused Architecture
 
-Since my professional experience is primarily in frontend development, I intentionally designed the project to emphasize frontend architecture and user experience.
-
-Key frontend decisions included:
+The project emphasizes frontend quality:
 
 - Feature-based folder structure
 - Chakra UI component library
-- TanStack Query for server state
+- TanStack Query for server state with cache invalidation
 - React Hook Form with Zod validation
-- Reusable UI components
-- Responsive layouts
-- Loading and error states
+- Loading, empty, and error states on every page
+- Toast notifications for all actions
+- Responsive layout
 
-This approach aligns with my experience while still providing a complete full-stack solution.
+## 4. Comprehensive Testing
+
+The project includes 90 automated tests (75 backend + 15 frontend) covering:
+
+- All API endpoints (happy path + validation + edge cases)
+- Status state machine (all valid + invalid transitions)
+- Frontend components (TicketFilters interaction)
+- Utility functions (formatDate, status machine)
 
 ---
 
 # Challenges Encountered
 
-## Prisma Configuration
+## Chakra UI v3 Compatibility
 
-One of the first challenges was configuring Prisma within a separate database workspace.
+The most significant challenge was Chakra UI v3's compound component pattern. Multiple components (`Field`, `NativeSelect`, `Toaster`) crashed at runtime with "children is not a function" errors.
 
-I encountered issues related to:
+**Resolution:** Replaced compound components with plain Chakra primitives (`Box`, `Text`, `Input`) and native HTML elements (`<select>`). Created a custom `ToasterComponent` with explicit render function.
 
-- Prisma configuration
-- Client generation
-- Database migration
-- Workspace setup
+**Lesson:** Always verify generated code against the actual installed library version.
 
-Resolving these issues improved my understanding of how Prisma integrates into a monorepo project.
+## Prisma in Monorepo
 
----
+Configuring Prisma in a separate `database/` workspace required careful setup of `DATABASE_URL` paths and a `postinstall` script for client generation.
 
-## Chakra UI Compatibility
+## Zod v4 Breaking Changes
 
-During frontend implementation, I encountered compatibility issues between generated code and the installed version of Chakra UI.
+Zod v4 removed the `required_error` parameter. AI-generated code used the v3 API and failed to compile. Fixed by using `.min(1, 'message')` pattern instead.
 
-Examples included:
+## Test Isolation
 
-- Unsupported `toaster` API
-- Component usage differences
-- Runtime rendering errors
-
-Rather than accepting generated code blindly, I reviewed the implementation and replaced unsupported patterns with compatible Chakra UI components.
-
----
-
-## Keeping the Project Simple
-
-AI often suggested additional features such as:
-
-- Dashboard
-- Comments
-- Activity Log
-- Advanced Sorting
-- Complex abstractions
-
-While these ideas were technically valid, they were outside the scope of the assessment.
-
-A conscious decision was made to keep the application focused on the required functionality instead of adding unnecessary complexity.
+Integration tests initially failed when run in parallel because `reseedDatabase()` in one file wiped data used by another. Fixed with `fileParallelism: false` and dynamic user ID fetching.
 
 ---
 
 # Lessons Learned
 
-## AI Is Most Effective with Small Prompts
+## Small, Focused Prompts Produce Better Results
 
-The quality of AI-generated output improved significantly when requests were broken into small, focused tasks.
+Requesting one endpoint, one page, or one component at a time produced more accurate code than broad requests. The AI performed best with clear, constrained tasks.
 
-Instead of asking AI to build an entire application, I requested:
+## Human Review Is Non-Negotiable
 
-- One API endpoint
-- One React page
-- One feature
-- One document
+Every AI-generated file required at least one review pass. Common issues caught during review:
 
-This resulted in more accurate and maintainable code.
+- Chakra v3 API incompatibilities
+- Incorrect import paths
+- Missing `Flex` import causing runtime crash
+- Hardcoded test data that broke after database reseeds
 
----
+## Clear Requirements Reduce Ambiguity
 
-## Human Review Is Essential
-
-AI accelerated development considerably, but every generated solution still required manual review.
-
-Examples included:
-
-- Reviewing architecture decisions
-- Simplifying generated code
-- Fixing compatibility issues
-- Validating business rules
-- Testing functionality
-
-This reinforced that AI works best as an assistant rather than a replacement for engineering judgement.
-
----
-
-## Importance of Clear Requirements
-
-The project highlighted the value of spending time on requirements and design before implementation.
-
-Having clear requirements reduced ambiguity and made implementation more predictable.
+Having acceptance criteria before implementation made it easy to verify each feature. The Given-When-Then format mapped directly to test assertions.
 
 ---
 
 # What I Would Improve
 
-Given additional time, I would extend the project with:
+Given additional time:
 
 - Pagination for large datasets
-- Automated unit and integration tests
-- Authentication and authorization
-- Ticket comments
-- Activity history
+- Sorting (by date, priority, status)
+- User authentication and role-based access
+- Higher frontend test coverage (page-level integration tests with msw)
+- Dark mode support
+- Activity log / audit trail
 - CI/CD pipeline
 - Docker support
-- Deployment to a cloud platform
-
-These improvements would make the application more production-ready while preserving the existing architecture.
 
 ---
 
 # Overall Experience
 
-This project provided practical experience in combining AI-assisted development with traditional software engineering practices.
+AI-assisted development with Kiro significantly reduced time spent on boilerplate, configuration, and repetitive code. The spec-driven approach ensured the AI worked within defined boundaries rather than generating unconstrained output.
 
-Using Kiro significantly reduced the time required for project scaffolding, repetitive implementation tasks, and documentation. However, the quality of the final application depended on careful planning, continuous validation, and iterative refinement.
-
-The experience reinforced that successful AI-assisted development is not about generating large amounts of code quickly, but about collaborating with AI effectively while maintaining responsibility for technical decisions and software quality.
+The key insight: AI is most effective when given clear context, small tasks, and when its output is reviewed before acceptance. The quality of the final application depends on the developer's ability to guide the AI, catch errors, and make architectural decisions that keep the codebase simple and maintainable.

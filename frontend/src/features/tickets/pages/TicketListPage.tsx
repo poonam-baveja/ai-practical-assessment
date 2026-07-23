@@ -16,28 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTickets } from '../hooks/useTickets';
 import { TicketFilters } from '../components/TicketFilters';
 import { useDebounce } from '../../../shared/hooks/useDebounce';
-import { formatDate } from '../../../shared/utils';
-import { Status } from '../types';
-
-function getStatusColor(status: Status): string {
-  switch (status) {
-    case Status.OPEN:
-      return 'blue';
-    case Status.IN_PROGRESS:
-      return 'yellow';
-    case Status.RESOLVED:
-      return 'green';
-    case Status.CLOSED:
-      return 'gray';
-  }
-}
-
-function formatStatus(status: Status): string {
-  return status
-    .split('_')
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
-}
+import { formatDate, getStatusColor, getPriorityColor, formatStatus } from '../../../shared/utils';
+import { Status, Priority } from '../types';
 
 function TicketIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -191,10 +171,16 @@ export function TicketListPage() {
                 <Table.ColumnHeader py={3} fontWeight="semibold" fontSize="xs" textTransform="uppercase" color="gray.600">
                   Title
                 </Table.ColumnHeader>
-                <Table.ColumnHeader py={3} fontWeight="semibold" fontSize="xs" textTransform="uppercase" color="gray.600" width="140px">
+                <Table.ColumnHeader py={3} fontWeight="semibold" fontSize="xs" textTransform="uppercase" color="gray.600" width="110px">
+                  Priority
+                </Table.ColumnHeader>
+                <Table.ColumnHeader py={3} fontWeight="semibold" fontSize="xs" textTransform="uppercase" color="gray.600" width="130px">
                   Status
                 </Table.ColumnHeader>
-                <Table.ColumnHeader py={3} fontWeight="semibold" fontSize="xs" textTransform="uppercase" color="gray.600" width="130px" display={{ base: 'none', md: 'table-cell' }}>
+                <Table.ColumnHeader py={3} fontWeight="semibold" fontSize="xs" textTransform="uppercase" color="gray.600" width="140px" display={{ base: 'none', md: 'table-cell' }}>
+                  Assigned To
+                </Table.ColumnHeader>
+                <Table.ColumnHeader py={3} fontWeight="semibold" fontSize="xs" textTransform="uppercase" color="gray.600" width="110px" display={{ base: 'none', md: 'table-cell' }}>
                   Created
                 </Table.ColumnHeader>
               </Table.Row>
@@ -220,9 +206,17 @@ export function TicketListPage() {
                     {ticket.title}
                   </Table.Cell>
                   <Table.Cell py={3}>
+                    <Badge colorPalette={getPriorityColor(ticket.priority)} size="sm">
+                      {ticket.priority}
+                    </Badge>
+                  </Table.Cell>
+                  <Table.Cell py={3}>
                     <Badge colorPalette={getStatusColor(ticket.status)} size="sm">
                       {formatStatus(ticket.status)}
                     </Badge>
+                  </Table.Cell>
+                  <Table.Cell py={3} color="gray.600" fontSize="sm" display={{ base: 'none', md: 'table-cell' }}>
+                    {ticket.assignedTo ? ticket.assignedTo.name : '—'}
                   </Table.Cell>
                   <Table.Cell py={3} color="gray.500" fontSize="sm" display={{ base: 'none', md: 'table-cell' }}>
                     {formatDate(ticket.createdAt)}

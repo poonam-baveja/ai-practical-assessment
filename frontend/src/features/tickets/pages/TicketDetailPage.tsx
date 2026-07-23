@@ -13,30 +13,13 @@ import { Alert } from '@chakra-ui/react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTicket } from '../hooks/useTicket';
 import { useUpdateTicketStatus } from '../hooks/useUpdateTicketStatus';
-import { formatDate } from '../../../shared/utils';
+import { formatDate, getStatusColor, getPriorityColor, formatStatus } from '../../../shared/utils';
 import { toaster } from '../../../shared/utils/toaster';
-import { Status } from '../types';
+import { Status, Priority } from '../types';
 import { getValidTransitions } from '../utils/statusMachine';
-
-function getStatusColor(status: Status): string {
-  switch (status) {
-    case Status.OPEN:
-      return 'blue';
-    case Status.IN_PROGRESS:
-      return 'yellow';
-    case Status.RESOLVED:
-      return 'green';
-    case Status.CLOSED:
-      return 'gray';
-  }
-}
-
-function formatStatus(status: Status): string {
-  return status
-    .split('_')
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
-}
+import { CommentList } from '../components/CommentList';
+import { AddCommentForm } from '../components/AddCommentForm';
+import { NativeSelect } from '../../../components/common';
 
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -100,7 +83,7 @@ export function TicketDetailPage() {
   if (!ticket) return null;
 
   const validNextStatuses = getValidTransitions(ticket.status);
-  const isClosed = ticket.status === Status.CLOSED;
+  const isTerminal = ticket.status === Status.CLOSED || ticket.status === Status.CANCELLED;
 
   const handleStatusUpdate = async () => {
     if (!selectedStatus) return;
@@ -126,16 +109,24 @@ export function TicketDetailPage() {
   return (
     <Stack gap={6} maxW="3xl" mx="auto">
       {/* Back link */}
-      <Button
-        variant="ghost"
-        size="sm"
-        alignSelf="flex-start"
-        onClick={() => navigate('/tickets')}
-      >
-        ← Back to Tickets
-      </Button>
+      <Flex justify="space-between" align="center">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/tickets')}
+        >
+          ← Back to Tickets
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => navigate(`/tickets/${ticketId}/edit`)}
+        >
+          Edit Ticket
+        </Button>
+      </Flex>
 
-      {/* Title + Status + Meta */}
+      {/* Title + Status + Priority */}
       <Box>
         <Flex align="center" gap={3} mb={2} wrap="wrap">
           <Heading as="h2" size="lg">
@@ -143,6 +134,9 @@ export function TicketDetailPage() {
           </Heading>
           <Badge colorPalette={getStatusColor(ticket.status)} size="md">
             {formatStatus(ticket.status)}
+          </Badge>
+          <Badge colorPalette={getPriorityColor(ticket.priority)} size="md">
+            {ticket.priority}
           </Badge>
         </Flex>
         <Text fontSize="sm" color="gray.500">
@@ -152,6 +146,48 @@ export function TicketDetailPage() {
           )}
         </Text>
       </Box>
+
+      {/* Ticket Metadata */}
+      <Flex
+        gap={6}
+        wrap="wrap"
+        bg="white"
+        p={5}
+        borderWidth="1px"
+        borderRadius="md"
+        borderColor="gray.200"
+      >
+        <Box>
+          <Text fontSize="xs" color="gray.500" textTransform="uppercase" fontWeight="semibold" mb={1}>
+            Created By
+          </Text>
+          <Text fontSize="sm" fontWeight="medium">
+            {ticket.createdBy ? ticket.createdBy.name : 'Unassigned'}
+          </Text>
+          {ticket.createdBy && (
+            <Text fontSize="xs" color="gray.500">{ticket.createdBy.email}</Text>
+          )}
+        </Box>
+        <Box>
+          <Text fontSize="xs" color="gray.500" textTransform="uppercase" fontWeight="semibold" mb={1}>
+            Assigned To
+          </Text>
+          <Text fontSize="sm" fontWeight="medium">
+            {ticket.assignedTo ? ticket.assignedTo.name : 'Unassigned'}
+          </Text>
+          {ticket.assignedTo && (
+            <Text fontSize="xs" color="gray.500">{ticket.assignedTo.email}</Text>
+          )}
+        </Box>
+        <Box>
+          <Text fontSize="xs" color="gray.500" textTransform="uppercase" fontWeight="semibold" mb={1}>
+            Priority
+          </Text>
+          <Badge colorPalette={getPriorityColor(ticket.priority)} size="sm">
+            {ticket.priority}
+          </Badge>
+        </Box>
+      </Flex>
 
       {/* Description */}
       <Box
@@ -181,24 +217,18 @@ export function TicketDetailPage() {
           Update Status
         </Text>
 
-        {isClosed ? (
+        {isTerminal ? (
           <Text color="gray.500" fontSize="sm">
-            This ticket is closed. No further status changes are allowed.
+            This ticket is {ticket.status === Status.CLOSED ? 'closed' : 'cancelled'}. No further status changes are allowed.
           </Text>
         ) : (
           <Flex gap={3} align="center" wrap="wrap">
-            <select
+            <NativeSelect
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
               aria-label="Select new status"
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                border: '1px solid #E2E8F0',
-                fontSize: '14px',
-                minWidth: '180px',
-                backgroundColor: 'white',
-              }}
+              fullWidth={false}
+              style={{ minWidth: '180px' }}
             >
               <option value="">Select new status</option>
               {validNextStatuses.map((s) => (
@@ -206,7 +236,7 @@ export function TicketDetailPage() {
                   {formatStatus(s)}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <Button
               size="sm"
               colorPalette="blue"
@@ -219,6 +249,23 @@ export function TicketDetailPage() {
             </Button>
           </Flex>
         )}
+      </Box>
+
+      {/* Comments Section */}
+      <Box
+        bg="white"
+        p={6}
+        borderWidth="1px"
+        borderRadius="md"
+        borderColor="gray.200"
+      >
+        <Text fontWeight="medium" fontSize="sm" color="gray.600" mb={4}>
+          Comments
+        </Text>
+        <CommentList ticketId={ticketId} />
+        <Box mt={5} pt={5} borderTopWidth="1px" borderColor="gray.200">
+          <AddCommentForm ticketId={ticketId} />
+        </Box>
       </Box>
     </Stack>
   );

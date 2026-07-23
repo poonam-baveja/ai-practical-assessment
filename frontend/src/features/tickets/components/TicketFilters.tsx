@@ -1,5 +1,6 @@
 import { Button, Flex, Input } from '@chakra-ui/react';
 import { Status } from '../types';
+import { NativeSelect } from '../../../components/common';
 
 interface TicketFiltersProps {
   search: string;
@@ -46,26 +47,21 @@ export function TicketFilters({
         maxW={{ base: '100%', md: '320px' }}
       />
 
-      {/* Status Dropdown — native select for full keyboard/a11y support */}
-      <select
+      {/* Status Dropdown */}
+      <NativeSelect
         value={status}
         onChange={(e) => onStatusChange(e.target.value)}
         aria-label="Filter by status"
-        style={{
-          padding: '6px 12px',
-          borderRadius: '6px',
-          border: '1px solid #E2E8F0',
-          fontSize: '14px',
-          minWidth: '160px',
-          backgroundColor: 'white',
-        }}
+        fullWidth={false}
+        style={{ minWidth: '160px' }}
       >
         <option value="">All Statuses</option>
         <option value={Status.OPEN}>Open</option>
         <option value={Status.IN_PROGRESS}>In Progress</option>
         <option value={Status.RESOLVED}>Resolved</option>
         <option value={Status.CLOSED}>Closed</option>
-      </select>
+        <option value={Status.CANCELLED}>Cancelled</option>
+      </NativeSelect>
 
       {/* Clear Filters */}
       {hasFilters && (

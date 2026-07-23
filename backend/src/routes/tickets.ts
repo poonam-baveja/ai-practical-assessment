@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getTickets, getTicket, postTicket, patchTicketStatus } from '../controllers/ticketController';
+import { getTickets, getTicket, postTicket, patchTicketStatus, putTicket } from '../controllers/ticketController';
 
 const router = Router();
 
@@ -11,6 +11,9 @@ router.get('/:id', getTicket);
 
 // POST /api/tickets — Create a new ticket
 router.post('/', postTicket);
+
+// PUT /api/tickets/:id — Update ticket fields (title, description, priority, assignedTo)
+router.put('/:id', putTicket);
 
 // PATCH /api/tickets/:id/status — Update ticket status
 router.patch('/:id/status', patchTicketStatus);

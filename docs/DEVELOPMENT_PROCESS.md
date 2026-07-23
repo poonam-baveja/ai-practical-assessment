@@ -4,307 +4,216 @@
 
 The Support Ticket Management System was developed using an iterative, AI-assisted workflow with **Kiro** following a **Spec-Driven Development (SDD)** approach.
 
-Instead of generating the complete application at once, the project was built incrementally through well-defined phases. Each phase was completed, reviewed, and validated before moving to the next, ensuring the implementation remained aligned with the project requirements.
+Instead of generating the complete application at once, the project was built incrementally through well-defined phases. Each phase was completed, reviewed, and validated before moving to the next.
 
 ---
 
-# Development Journey
+# Development Phases
 
 ## Phase 1: Requirement Analysis
 
-The project began by analyzing the assessment requirements and identifying the core functionality needed for a Support Ticket Management System.
-
-### Activities
-
-- Reviewed assessment objectives.
-- Defined project scope.
-- Identified core user flows.
-- Removed non-essential features to keep the project focused.
+The project began by analyzing the assessment requirements and identifying the core functionality.
 
 ### Scope Decisions
 
 Included:
 
-- Create Ticket
-- View Ticket List
-- Ticket Details
-- Update Ticket Status
-- Search Tickets
-- Filter by Status
+- Ticket CRUD (Create, Read, Update)
+- Ticket status workflow with state machine
+- Search by title/description
+- Filter by status
+- Priority levels (LOW, MEDIUM, HIGH)
+- User assignment (created by, assigned to)
+- Comments on tickets
+- Dashboard with status counts
+- Validation (client + server)
+- Integration tests
 
 Excluded:
 
 - Authentication
-- Comments
 - Activity Log
-- Dashboard
 - Notifications
 - File Uploads
-- Advanced Sorting
+- Pagination
+- Sorting
 
 ---
 
-## Phase 2: Acceptance Criteria
+## Phase 2: System Design
 
-Detailed acceptance criteria were created for every functional requirement using the Given–When–Then format.
-
-This helped define expected behaviour before implementation began.
-
-Examples included:
-
-- Ticket creation validation
-- Status transition rules
-- Search behaviour
-- Filtering behaviour
-- Error handling
-
----
-
-## Phase 3: System Design
-
-A technical design document was prepared before writing any implementation code.
+A technical design was prepared before writing implementation code.
 
 The design included:
 
-- Overall architecture
-- Folder structure
-- API contracts
-- Data model
-- Component hierarchy
-- State management strategy
-- Validation approach
-
-### Key Architectural Decisions
-
-Frontend:
-
-- React
-- TypeScript
-- Chakra UI
-- TanStack Query
-- React Hook Form
-- Zod
-
-Backend:
-
-- Express
-- TypeScript
-- Prisma
-- SQLite
+- Monorepo structure (frontend, backend, database)
+- Feature-based frontend architecture
+- Layered backend architecture (Route → Controller → Service → Prisma)
+- Data model: User, Ticket, Comment
+- Status state machine with CANCELLED support
+- API contract design
 
 ---
 
-## Phase 4: Project Setup
+## Phase 3: Project Setup
 
-The repository was initialized using a monorepo structure.
-
-### Setup Activities
-
-- Created frontend workspace
-- Created backend workspace
-- Created database workspace
-- Configured Vite
-- Configured Express
-- Configured Prisma
-- Configured SQLite
-- Installed project dependencies
+```
+ai-practical-assessment/
+├── frontend/    # React + Vite + Chakra UI
+├── backend/     # Express + TypeScript
+├── database/    # Prisma + SQLite
+└── docs/        # Documentation
+```
 
 ---
 
-## Phase 5: Backend Development
+## Phase 4: Backend Development
 
-The backend was implemented using a layered architecture.
+### Architecture
 
 ```
-Routes
-    ↓
-Controllers
-    ↓
-Services
-    ↓
-Prisma
+Routes → Controllers → Services → Prisma → SQLite
 ```
 
-### Completed Features
+### Endpoints Implemented
 
-- Health endpoint
-- Ticket listing
-- Create ticket
-- Ticket details
-- Update ticket status
-- Search
-- Status filtering
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/tickets | List (with search + status filter) |
+| GET | /api/tickets/:id | Detail (with comments) |
+| POST | /api/tickets | Create |
+| PUT | /api/tickets/:id | Update fields |
+| PATCH | /api/tickets/:id/status | Update status |
+| GET | /api/tickets/:id/comments | List comments |
+| POST | /api/tickets/:id/comments | Add comment |
+| GET | /api/users | List users |
 
 ### Validation
 
-- Zod request validation
-- HTTP status handling
-- Error responses
-- Business rule validation
+- Zod schemas on all POST/PUT/PATCH bodies
+- Query parameter validation on GET
+- Path parameter validation (numeric ID check)
+- Status transition enforcement via state machine
 
 ---
 
-## Phase 6: Database Development
+## Phase 5: Database
 
-Prisma ORM was used with SQLite.
+### Models
 
-### Database Model
+- **User** — id, name, email
+- **Ticket** — id, title, description, status, priority, createdBy, assignedTo, timestamps
+- **Comment** — id, message, ticketId, createdBy, timestamp
 
-Ticket
+### Seed Data
 
-- Id
-- Title
-- Description
-- Status
-- CreatedAt
-- UpdatedAt
-
-### Additional Work
-
-- Database migration
-- Seed data
-- Prisma Client generation
+3 users, 5 tickets across all statuses, 5 comments with author attribution.
 
 ---
 
-## Phase 7: Frontend Development
+## Phase 6: Frontend Development
 
-The frontend followed a feature-based architecture.
+### Architecture
 
 ```
-features/
-    tickets/
-        components/
-        hooks/
-        pages/
-        services/
+features/tickets/
+├── api/          # ticketApi, commentApi, userApi
+├── components/   # TicketFilters, AddCommentForm, CommentList
+├── hooks/        # useTickets, useTicket, useCreateTicket, useUpdateTicket,
+│                 # useUpdateTicketStatus, useComments, useCreateComment, useUsers
+├── pages/        # Dashboard, List, Create, Detail, Edit
+├── utils/        # Status machine
+└── types.ts      # Ticket, Comment, User, Status, Priority
 ```
 
-### Completed Screens
+### Screens
 
-- Ticket List
-- Create Ticket
-- Ticket Details
-
-### Shared Features
-
-- React Query
-- Axios API layer
-- Chakra UI theme
-- Loading states
-- Error states
-- Toast notifications
+| Route | Page | Features |
+|-------|------|----------|
+| `/` | Dashboard | Status counts |
+| `/tickets` | Ticket List | Table, search, status filter, priority/assignee display |
+| `/tickets/new` | Create Ticket | Form with validation, priority, assignee |
+| `/tickets/:id` | Ticket Detail | Full details, status update, comments |
+| `/tickets/:id/edit` | Edit Ticket | Pre-filled form, update fields |
 
 ---
 
-## Phase 8: Status Management
-
-Ticket lifecycle rules were implemented to ensure valid state transitions.
-
-Allowed transitions:
+## Phase 7: Status Management
 
 ```
-OPEN
-   ↓
-IN_PROGRESS
-   ↓
-RESOLVED
-   ↓
-CLOSED
+OPEN → IN_PROGRESS → RESOLVED → CLOSED
+  ↓         ↓
+CANCELLED  CANCELLED
 ```
 
-Invalid transitions are rejected by the backend and surfaced to the user with appropriate error messages.
+- CLOSED and CANCELLED are terminal states.
+- Invalid transitions return 400 from backend.
+- Frontend only renders valid next-status options.
+- State machine logic shared between frontend and backend.
 
 ---
 
-## Phase 9: Search & Filtering
+## Phase 8: Testing
 
-Search and filtering were implemented using server-side queries.
+### Backend (75 tests)
 
-### Features
+- Health endpoint
+- GET /api/tickets (list, search, filter, validation)
+- POST /api/tickets (creation, validation, boundary values)
+- PUT /api/tickets/:id (update, validation, status protection)
+- PATCH /api/tickets/:id/status (valid transitions, invalid transitions, edge cases)
+- Comments API (GET, POST, validation, 404)
+- Status machine unit tests
 
-- Search by title
-- Search by description
-- Filter by status
-- Debounced search input
-- Backend filtering using Prisma
+### Frontend (15 tests)
 
-The frontend delegates filtering to the backend rather than performing client-side filtering.
+- Status machine utility
+- formatDate utility
+- TicketFilters component (render, interaction, clear)
 
----
+### Testing Tools
 
-## Phase 10: Testing & Validation
-
-Each feature was manually verified after implementation.
-
-Validation included:
-
-- API endpoint testing
-- Database verification
-- Form validation
-- Error scenarios
-- Status transitions
-- Search behaviour
-- Filter behaviour
-
-Frontend functionality was verified using browser testing and backend endpoints were tested through the running application.
+- Vitest (test runner)
+- Supertest (HTTP integration testing without starting server)
+- React Testing Library (component testing)
 
 ---
 
-# Development Timeline
+## Phase 9: Documentation
 
-```
-Requirement Analysis
-        ↓
-Acceptance Criteria
-        ↓
-System Design
-        ↓
-Project Setup
-        ↓
-Backend Development
-        ↓
-Database Integration
-        ↓
-Frontend Development
-        ↓
-Status Update
-        ↓
-Search & Filtering
-        ↓
-Testing & Validation
-        ↓
-Documentation
-```
+| Document | Content |
+|----------|---------|
+| `README.md` | Setup, features, API, architecture |
+| `docs/ARCHITECTURE.md` | Diagrams, data model, data flow, sequence diagrams |
+| `docs/AI_USAGE.md` | How AI was used, human oversight |
+| `docs/DEVELOPMENT_PROCESS.md` | This file — phase-by-phase development log |
+| `docs/REFLECTION.md` | Lessons learned, challenges, improvements |
+| `PROMPT_HISTORY.md` | Chronological log of all AI interactions |
 
 ---
 
 # Challenges Encountered
 
-During development several technical issues were identified and resolved.
-
-Examples include:
-
-- Prisma configuration issues
-- Workspace setup
-- Database migration configuration
-- Chakra UI compatibility issues
-- React runtime errors
-- API integration
-- React Query cache invalidation
-
-Each issue was resolved through iterative debugging and manual verification before continuing development.
+| Challenge | Resolution |
+|-----------|-----------|
+| Prisma in monorepo | Configured workspace with `postinstall` script for client generation |
+| Zod v4 API changes | Replaced `required_error` with `.min(1, message)` pattern |
+| Chakra UI v3 runtime crashes | Replaced compound components with plain primitives |
+| Toast "children is not a function" | Created custom ToasterComponent with explicit render function |
+| Test parallelism race conditions | Set `fileParallelism: false` in vitest config |
+| Hardcoded user IDs in tests | Refactored to fetch real IDs via API |
 
 ---
 
 # Outcome
 
-Following a phased development process resulted in:
+The final application includes:
 
-- A clean and maintainable architecture
-- Incremental feature delivery
-- Easier debugging
-- Better alignment with requirements
-- Continuous validation throughout the project
-
-The final application satisfies the core functional requirements while maintaining a simple, frontend-focused implementation suitable for the assessment.
+- 9 API endpoints
+- 5 frontend pages
+- 3 database models
+- 75 backend tests + 15 frontend tests
+- Enforced status workflow with 5 states
+- Server-side search and filtering
+- Full comment system with author attribution
+- Comprehensive documentation

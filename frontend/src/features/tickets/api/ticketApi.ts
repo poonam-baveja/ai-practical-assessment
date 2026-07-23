@@ -7,6 +7,9 @@ import type { Ticket } from '../types';
 export interface CreateTicketPayload {
   title: string;
   description: string;
+  priority?: string;
+  assignedToId?: number | null;
+  createdById?: number | null;
 }
 
 /**
@@ -69,5 +72,24 @@ export async function updateTicketStatus(payload: UpdateTicketStatusPayload): Pr
   const response = await api.patch<Ticket>(`/api/tickets/${payload.id}/status`, {
     status: payload.status,
   });
+  return response.data;
+}
+
+/**
+ * Payload for updating a ticket's editable fields.
+ */
+export interface UpdateTicketPayload {
+  title?: string;
+  description?: string;
+  priority?: string;
+  assignedToId?: number | null;
+}
+
+/**
+ * Updates a ticket's editable fields.
+ * PUT /api/tickets/:id → returns the updated Ticket
+ */
+export async function updateTicket(id: number, payload: UpdateTicketPayload): Promise<Ticket> {
+  const response = await api.put<Ticket>(`/api/tickets/${id}`, payload);
   return response.data;
 }

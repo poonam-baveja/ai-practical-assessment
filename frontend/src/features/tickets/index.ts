@@ -3,5 +3,5 @@
  * Only expose what other parts of the app need.
  */
 export { TicketListPage, CreateTicketPage, TicketDetailPage } from './pages';
-export type { Ticket, Comment } from './types';
-export { Status } from './types';
+export type { Ticket, Comment, User } from './types';
+export { Status, Priority } from './types';

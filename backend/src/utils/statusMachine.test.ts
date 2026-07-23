@@ -29,6 +29,26 @@ describe('statusMachine', () => {
       expect(isValidTransition('CLOSED', 'OPEN')).toBe(false);
       expect(isValidTransition('CLOSED', 'IN_PROGRESS')).toBe(false);
       expect(isValidTransition('CLOSED', 'RESOLVED')).toBe(false);
+      expect(isValidTransition('CLOSED', 'CANCELLED')).toBe(false);
+    });
+
+    it('rejects CANCELLED → anything (terminal state)', () => {
+      expect(isValidTransition('CANCELLED', 'OPEN')).toBe(false);
+      expect(isValidTransition('CANCELLED', 'IN_PROGRESS')).toBe(false);
+      expect(isValidTransition('CANCELLED', 'RESOLVED')).toBe(false);
+      expect(isValidTransition('CANCELLED', 'CLOSED')).toBe(false);
+    });
+
+    it('allows OPEN → CANCELLED', () => {
+      expect(isValidTransition('OPEN', 'CANCELLED')).toBe(true);
+    });
+
+    it('allows IN_PROGRESS → CANCELLED', () => {
+      expect(isValidTransition('IN_PROGRESS', 'CANCELLED')).toBe(true);
+    });
+
+    it('rejects RESOLVED → CANCELLED', () => {
+      expect(isValidTransition('RESOLVED', 'CANCELLED')).toBe(false);
     });
 
     it('rejects IN_PROGRESS → CLOSED (must go through RESOLVED)', () => {
@@ -42,11 +62,11 @@ describe('statusMachine', () => {
 
   describe('getValidTransitions', () => {
     it('returns [IN_PROGRESS] for OPEN', () => {
-      expect(getValidTransitions('OPEN')).toEqual(['IN_PROGRESS']);
+      expect(getValidTransitions('OPEN')).toEqual(['IN_PROGRESS', 'CANCELLED']);
     });
 
     it('returns [RESOLVED] for IN_PROGRESS', () => {
-      expect(getValidTransitions('IN_PROGRESS')).toEqual(['RESOLVED']);
+      expect(getValidTransitions('IN_PROGRESS')).toEqual(['RESOLVED', 'CANCELLED']);
     });
 
     it('returns [CLOSED] for RESOLVED', () => {
@@ -55,6 +75,10 @@ describe('statusMachine', () => {
 
     it('returns [] for CLOSED (terminal)', () => {
       expect(getValidTransitions('CLOSED')).toEqual([]);
+    });
+
+    it('returns [] for CANCELLED (terminal)', () => {
+      expect(getValidTransitions('CANCELLED')).toEqual([]);
     });
   });
 });

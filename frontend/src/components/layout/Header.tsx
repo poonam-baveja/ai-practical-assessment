@@ -25,7 +25,7 @@ export function Header() {
         align="center"
         justify="space-between"
       >
-        <Link to="/tickets" aria-label="Go to ticket list">
+        <Link to="/" aria-label="Go to dashboard">
           <Heading as="h1" size="md" color="blue.600" _hover={{ color: 'blue.700' }}>
             Support Tickets
           </Heading>
